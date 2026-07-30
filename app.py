@@ -41,6 +41,40 @@ COLOR_PRESETS = {
         "washes. Keep the black outlines visible underneath the color. "
         "Muted, artistic color palette."
     ),
+    "🌊 Ocean Cool": (
+        "Colorize this black and white coloring book line art page with "
+        "cool ocean tones: teal, aqua, deep blue, and seafoam green. Keep "
+        "all black outlines crisp, clean, and completely unchanged."
+    ),
+    "🌺 Tropical Pop": (
+        "Colorize this black and white coloring book line art page with "
+        "bright tropical colors: hot pink, sunny orange, lime green, and "
+        "turquoise. Keep all black outlines crisp, clean, and completely "
+        "unchanged. Playful, energetic palette."
+    ),
+    "🍬 Candy Kids": (
+        "Colorize this black and white coloring book line art page with "
+        "cheerful, candy-bright primary and secondary colors, ideal for a "
+        "children's book. Keep all black outlines crisp, clean, and "
+        "completely unchanged. Simple, flat, bold color fills."
+    ),
+    "🌙 Midnight Fantasy": (
+        "Colorize this black and white coloring book line art page with "
+        "deep magical tones: midnight blue, violet, and touches of silver "
+        "or gold. Keep all black outlines crisp, clean, and completely "
+        "unchanged. Dreamy, fantasy-inspired palette."
+    ),
+    "🎄 Holiday Cheer": (
+        "Colorize this black and white coloring book line art page with "
+        "classic holiday colors: red, deep green, and gold. Keep all black "
+        "outlines crisp, clean, and completely unchanged."
+    ),
+    "🌻 Sunny Meadow": (
+        "Colorize this black and white coloring book line art page with "
+        "warm, sunny colors: golden yellow, fresh green, and sky blue. "
+        "Keep all black outlines crisp, clean, and completely unchanged. "
+        "Bright, cheerful spring/summer palette."
+    ),
     "✏️ Custom (write your own)": None,
 }
 
