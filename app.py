@@ -1,5 +1,6 @@
 import io
 import hashlib
+import random
 import requests
 from PIL import Image
 import streamlit as st
@@ -195,7 +196,7 @@ def get_image_hash(img_bytes: bytes, suffix: str = "") -> str:
     return hashlib.md5(img_bytes + suffix.encode()).hexdigest()
 
 
-def colorize_image(image_bytes: bytes, prompt: str) -> bytes:
+def colorize_image(image_bytes: bytes, prompt: str, seed: int | None = None) -> bytes:
     """Colorize a line art image using FLUX.1 Kontext via Replicate API."""
     api_token = st.secrets.get("REPLICATE_API_TOKEN", None)
     if not api_token:
@@ -203,15 +204,16 @@ def colorize_image(image_bytes: bytes, prompt: str) -> bytes:
 
     client = replicate.Client(api_token=api_token)
 
-    output = client.run(
-        AI_MODEL,
-        input={
-            "prompt": prompt,
-            "input_image": io.BytesIO(image_bytes),
-            "aspect_ratio": "match_input_image",
-            "output_format": "png",
-        },
-    )
+    input_params = {
+        "prompt": prompt,
+        "input_image": io.BytesIO(image_bytes),
+        "aspect_ratio": "match_input_image",
+        "output_format": "png",
+    }
+    if seed is not None:
+        input_params["seed"] = seed
+
+    output = client.run(AI_MODEL, input=input_params)
 
     if isinstance(output, list):
         output = output[0]
@@ -222,6 +224,39 @@ def colorize_image(image_bytes: bytes, prompt: str) -> bytes:
     response = requests.get(str(output), timeout=120)
     response.raise_for_status()
     return response.content
+
+
+def run_colorize(image_bytes: bytes, prompt: str, filename: str, force_new: bool = False):
+    """Colorize an image, using the cache unless force_new is True."""
+    cache_key = get_image_hash(image_bytes, prompt)
+    if "colorize_cache" not in st.session_state:
+        st.session_state["colorize_cache"] = {}
+
+    if not force_new and cache_key in st.session_state["colorize_cache"]:
+        result_bytes = st.session_state["colorize_cache"][cache_key]
+        st.info("✨ Using a previously generated result (cached)")
+    else:
+        try:
+            with st.spinner("🎨 AI is coloring your page... this may take 10-20 seconds."):
+                seed = random.randint(1, 2_000_000_000) if force_new else None
+                result_bytes = colorize_image(image_bytes, prompt, seed=seed)
+                st.session_state["colorize_cache"][cache_key] = result_bytes
+        except Exception as e:
+            st.error(
+                f"❌ Coloring failed. Please try again or contact support.  \n"
+                f"Error: {str(e)[:200]}"
+            )
+            st.stop()
+
+    st.session_state["colorized"] = {
+        "buf": result_bytes,
+        "name": filename.rsplit(".", 1)[0],
+    }
+    st.success(
+        "✅ Done! Your colored preview is ready below. Want to preview this "
+        "image in another color style? Your current preview will be "
+        "replaced, so download it first if you want to keep it."
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -306,30 +341,14 @@ else:
             if not prompt or not prompt.strip():
                 st.error("Please choose a style or describe how you'd like it colored.")
             else:
-                cache_key = get_image_hash(original_bytes, prompt)
-                if "colorize_cache" not in st.session_state:
-                    st.session_state["colorize_cache"] = {}
+                run_colorize(original_bytes, prompt, uploaded_file.name, force_new=False)
 
-                if cache_key in st.session_state["colorize_cache"]:
-                    result_bytes = st.session_state["colorize_cache"][cache_key]
-                    st.info("✨ Using a previously generated result (cached)")
+        if "colorized" in st.session_state:
+            if st.button("🔄 Generate a New Variation", width="stretch"):
+                if not prompt or not prompt.strip():
+                    st.error("Please choose a style or describe how you'd like it colored.")
                 else:
-                    try:
-                        with st.spinner("🎨 AI is coloring your page... this may take 10-20 seconds."):
-                            result_bytes = colorize_image(original_bytes, prompt)
-                            st.session_state["colorize_cache"][cache_key] = result_bytes
-                    except Exception as e:
-                        st.error(
-                            f"❌ Coloring failed. Please try again or contact support.  \n"
-                            f"Error: {str(e)[:200]}"
-                        )
-                        st.stop()
-
-                st.session_state["colorized"] = {
-                    "buf": result_bytes,
-                    "name": uploaded_file.name.rsplit(".", 1)[0],
-                }
-                st.success("✅ Done! Your colored preview is ready below.")
+                    run_colorize(original_bytes, prompt, uploaded_file.name, force_new=True)
 
 if "colorized" in st.session_state:
     st.markdown("---")
